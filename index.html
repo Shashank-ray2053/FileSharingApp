@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NepShare - Simple File Sharing</title>
+    <style>
+       * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f7c8e0, #e6a7e2);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #6c5ce7;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+        }
+
+        p {
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .file-input-container {
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+            background-color: #fafafa;
+            color: #333;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            border-color: #6c5ce7;
+            background-color: #f0e6ff;
+        }
+
+        .upload-btn {
+            background-color: #6c5ce7;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background-color: #5b4dbf;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            color: #27ae60;
+            margin-top: 15px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .file-list {
+            list-style-type: none;
+            margin-top: 20px;
+            padding-left: 0;
+            text-align: left;
+        }
+
+        .file-list li {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .file-list li:hover {
+            background-color: #f0e6ff;
+            border-color: #6c5ce7;
+            transform: translateX(5px);
+        }
+
+        .file-list .file-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .file-list .file-size {
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        .file-list .download-link {
+            color: #6c5ce7;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .file-list .download-link:hover {
+            color: #5b4dbf;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>NepShare</h1>
+        <p>Upload your files and share them easily with others!</p>
+
+        <div class="file-input-container">
+            <input type="file" class="file-input" id="fileInput" multiple>
+        </div>
+
+        <button class="upload-btn" id="uploadBtn">Upload Files</button>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <ul class="file-list" id="fileList"></ul>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileList = document.getElementById('fileList');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        uploadBtn.addEventListener('click', () => {
+            const files = fileInput.files;
+
+            // Clear any previous messages
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+
+            if (files.length === 0) {
+                errorMessage.textContent = 'Please select at least one file to upload.';
+                return;
+            }
+
+            const formData = new FormData();
+            Array.from(files).forEach(file => {
+                formData.append('files', file); // Append each file to the FormData
+            });
+
+            // Send the files to the server using Fetch API
+            fetch('http://localhost:3000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMessage.textContent = 'Files uploaded successfully!';
+                    fileList.innerHTML = ''; // Clear previous file list
+                    data.fileUrls.forEach(url => {
+                        const listItem = document.createElement('li');
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = url;
+                        downloadLink.textContent = 'Download';
+                        listItem.appendChild(downloadLink);
+                        fileList.appendChild(listItem);
+                    });
+                } else {
+                    errorMessage.textContent = 'Upload failed!';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMessage.textContent = 'An error occurred during the upload.';
+            });
+
+            // Clear the file input field after upload
+            fileInput.value = '';
+        });
+    </script>
+
+</body>
+
+</html>
